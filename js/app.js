@@ -65,92 +65,6 @@
     `).join('');
   }
 
-  function updatePrintQuote(data) {
-    setText('printProjectName', data.values.projectName || '–');
-    setText('printCustomerName', data.values.customerName || '–');
-    setText('printDate', new Intl.DateTimeFormat('de-CH').format(new Date()));
-
-    const noteWrap = $('printProjectNoteWrap');
-    if (data.values.projectNote) {
-      noteWrap.style.display = 'block';
-      setText('printProjectNote', data.values.projectNote);
-    } else {
-      noteWrap.style.display = 'none';
-      setText('printProjectNote', '–');
-    }
-
-    const rows = [
-      {
-        label: `Grundaufwand ${data.compName}`,
-        qty: `${num(data.compSetupHours, 1)} h`,
-        rate: formatRatePerHour(data.values.hourlyRate),
-        total: currency(data.compSetupCost)
-      }
-    ];
-
-    if (data.referenceHours > 0) {
-      rows.push({
-        label: `Vorlagenaufbereitung (${data.referenceLabel})`,
-        qty: `${num(data.referenceHours, 1)} h`,
-        rate: formatRatePerHour(data.values.hourlyRate),
-        total: currency(data.referenceCost)
-      });
-    }
-
-    if (data.objectBaseHours > 0) {
-      rows.push({
-        label: `Objektbasis ${data.projectNameResolved}`,
-        qty: `${num(data.objectBaseHours, 1)} h`,
-        rate: formatRatePerHour(data.values.hourlyRate),
-        total: currency(data.objectBaseCost)
-      });
-    }
-
-    rows.push({
-      label: `Produktionszeit ${data.projectNameResolved} · Detail ${data.values.detailLevel}/10 · Präzision ${data.values.precisionLevel}/10 · ${data.values.colors} Farben`,
-      qty: `${num(data.productionHours, 1)} h`,
-      rate: formatRatePerHour(data.values.hourlyRate),
-      total: currency(data.productionCost)
-    });
-
-    if (data.values.preWorkNeeded === 'yes' && data.values.preWorkHours > 0) {
-      rows.push({
-        label: 'Vorarbeiten zusätzlich',
-        qty: `${num(data.values.preWorkHours, 1)} h`,
-        rate: formatRatePerHour(data.values.hourlyRate),
-        total: currency(data.preWorkCost)
-      });
-    }
-
-    rows.push({
-      label: `Material Grundbedarf (${num(data.area)} m²)`,
-      qty: `${num(data.area)} m²`,
-      rate: formatRatePerSquare(data.values.materialRate),
-      total: currency(data.material)
-    });
-
-    rows.push({
-      label: 'Verbrauchsmaterial',
-      qty: `${num(data.totalHours, 1)} h`,
-      rate: formatRatePerHour(data.values.consumableRate),
-      total: currency(data.consumables)
-    });
-
-    if (data.values.specialMaterialCost > 0) {
-      rows.push({
-        label: data.values.specialMaterialName ? `Sondermaterial: ${data.values.specialMaterialName}` : 'Sondermaterial',
-        qty: '1',
-        rate: currency(data.values.specialMaterialCost),
-        total: currency(data.values.specialMaterialCost)
-      });
-    }
-
-    buildPrintRows(rows);
-    setText('printSubtotal', currency(data.subtotal));
-    setText('printBuffer', currency(data.target - data.subtotal));
-    setText('printTotal', currency(data.target));
-  }
-
   function tankPartsConfig(partCount, partsType) {
     return {
       name: `Tank + ${partCount} Teil(e)`,
@@ -265,6 +179,92 @@
     return lines.join('\n');
   }
 
+  function updatePrintQuote(data) {
+    setText('printProjectName', data.values.projectName || '–');
+    setText('printCustomerName', data.values.customerName || '–');
+    setText('printDate', new Intl.DateTimeFormat('de-CH').format(new Date()));
+
+    const noteWrap = $('printProjectNoteWrap');
+    if (data.values.projectNote) {
+      noteWrap.style.display = 'block';
+      setText('printProjectNote', data.values.projectNote);
+    } else {
+      noteWrap.style.display = 'none';
+      setText('printProjectNote', '–');
+    }
+
+    const rows = [];
+
+    rows.push({
+      label: `Grundaufwand ${data.compName}`,
+      qty: `${num(data.compSetupHours, 1)} h`,
+      rate: formatRatePerHour(data.values.hourlyRate),
+      total: currency(data.compSetupCost)
+    });
+
+    if (data.referenceHours > 0) {
+      rows.push({
+        label: `Vorlagenaufbereitung (${data.referenceLabel})`,
+        qty: `${num(data.referenceHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.referenceCost)
+      });
+    }
+
+    if (data.objectBaseHours > 0) {
+      rows.push({
+        label: `Objektbasis ${data.projectNameResolved}`,
+        qty: `${num(data.objectBaseHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.objectBaseCost)
+      });
+    }
+
+    rows.push({
+      label: `Produktionszeit ${data.projectNameResolved} · Detail ${data.values.detailLevel}/10 · Präzision ${data.values.precisionLevel}/10 · ${data.values.colors} Farben`,
+      qty: `${num(data.productionHours, 1)} h`,
+      rate: formatRatePerHour(data.values.hourlyRate),
+      total: currency(data.productionCost)
+    });
+
+    if (data.values.preWorkNeeded === 'yes' && data.values.preWorkHours > 0) {
+      rows.push({
+        label: 'Vorarbeiten zusätzlich',
+        qty: `${num(data.values.preWorkHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.preWorkCost)
+      });
+    }
+
+    rows.push({
+      label: `Material Grundbedarf (${num(data.area)} m²)`,
+      qty: `${num(data.area)} m²`,
+      rate: formatRatePerSquare(data.values.materialRate),
+      total: currency(data.material)
+    });
+
+    rows.push({
+      label: 'Verbrauchsmaterial',
+      qty: `${num(data.totalHours, 1)} h`,
+      rate: formatRatePerHour(data.values.consumableRate),
+      total: currency(data.consumables)
+    });
+
+    if (data.values.specialMaterialCost > 0) {
+      rows.push({
+        label: data.values.specialMaterialName ? `Sondermaterial: ${data.values.specialMaterialName}` : 'Sondermaterial',
+        qty: '1',
+        rate: currency(data.values.specialMaterialCost),
+        total: currency(data.values.specialMaterialCost)
+      });
+    }
+
+    buildPrintRows(rows);
+    setText('printSubtotal', currency(data.subtotal));
+    setText('printBuffer', currency(data.target - data.subtotal));
+    setText('printTotal', currency(data.target));
+  }
+
   function calculate() {
     toggleObjectFields();
     toggleExtraCostFields();
@@ -314,6 +314,8 @@
     $('preWorkTotal').textContent = currency(preWorkCost);
     $('specialMaterialTotal').textContent = currency(specialMaterialCost);
     $('subtotalTotal').textContent = currency(subtotal);
+    $('cfgMaterialBase').textContent = currency(cfg.materialBase);
+    $('cfgBaseHours').textContent = `${num(cfg.productionHoursPerM2, 1)} h`;
 
     $('formulaText').innerHTML = `
       <strong>Rechenlogik</strong><br>
@@ -322,14 +324,6 @@
       Zwischensumme = Arbeit + Material + Verbrauchsmaterial (${currency(v.consumableRate)}/h) + Vorarbeiten + Sondermaterial. Danach Puffer ${v.buffer}%.
     `;
 
-    const compSetupHours = comp.setupHours;
-    const compSetupCost = compSetupHours * v.hourlyRate;
-    const referenceHours = refHours;
-    const referenceCost = referenceHours * v.hourlyRate;
-    const objectBaseHours = proj.objectBaseHours;
-    const objectBaseCost = objectBaseHours * v.hourlyRate;
-    const productionCost = productionHours * v.hourlyRate;
-
     const payload = {
       values: v,
       area, totalHours, labor, material, consumables, preWorkCost, specialMaterialCost, subtotal, target, low, high,
@@ -337,11 +331,16 @@
       compName: comp.name,
       referenceLabel: $('referenceQuality').selectedOptions[0].text,
       dimensions: v.projectType === 'flat' ? `${v.widthCm} × ${v.heightCm} cm` : null,
-      compSetupHours, compSetupCost,
-      referenceHours, referenceCost,
-      objectBaseHours, objectBaseCost,
-      productionHours, productionCost
+      compSetupHours: comp.setupHours,
+      compSetupCost: comp.setupHours * v.hourlyRate,
+      referenceHours: refHours,
+      referenceCost: refHours * v.hourlyRate,
+      objectBaseHours: proj.objectBaseHours,
+      objectBaseCost: proj.objectBaseHours * v.hourlyRate,
+      productionHours,
+      productionCost: productionHours * v.hourlyRate
     };
+
     const summary = buildSummary(payload);
     $('summaryPreview').textContent = summary;
     updatePrintQuote(payload);
@@ -373,11 +372,11 @@
   }
 
   function exportPdf() {
-    const printTitle = `${$('projectName').value.trim() || $('customerName').value.trim() || 'FG-Designs-Kalkulation'} – FG Designs`;
+    calculate();
     const previousTitle = document.title;
-    document.title = printTitle;
-    setTimeout(() => { window.print(); }, 50);
-    setTimeout(() => { document.title = previousTitle; }, 1000);
+    document.title = `${$('projectName').value.trim() || $('customerName').value.trim() || 'FG-Designs-Kalkulation'} – FG Designs & Customs`;
+    setTimeout(() => window.print(), 80);
+    setTimeout(() => { document.title = previousTitle; }, 1200);
   }
 
   function bindEvents() {
