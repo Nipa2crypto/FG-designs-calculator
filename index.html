@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FG Designs – Kalkulator</title>
+  <meta name="description" content="Frontend-Kalkulator für FG Designs" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="brand-lockup">
+        <img src="./assets/logo-fg.png" alt="FG Designs Logo" class="brand-logo" />
+        <div>
+          <p class="eyebrow">FG Designs</p>
+          <h1>Kalkulator</h1>
+          <p class="hero-copy">Frontend-only, GitHub-Pages-tauglich und direkt einsatzbereit für Projektkalkulationen in CHF.</p>
+        </div>
+      </div>
+
+      <div class="base-card">
+        <h2>Fixe Kalkulationsbasis</h2>
+        <div class="base-grid">
+          <div class="base-item">
+            <span>Stundensatz</span>
+            <strong id="baseHourlyRate">CHF 0</strong>
+          </div>
+          <div class="base-item">
+            <span>Material / m²</span>
+            <strong id="baseMaterialRate">CHF 0</strong>
+          </div>
+          <div class="base-item">
+            <span>Puffer</span>
+            <strong id="baseBuffer">0 %</strong>
+          </div>
+        </div>
+        <p class="muted small">Diese Werte sind fest im Code hinterlegt und nicht im Formular editierbar.</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel form-panel">
+        <div class="section">
+          <div class="section-title"><span class="badge">1</span>Projekt</div>
+          <div class="grid cols-2">
+            <div>
+              <label for="projectName">Projektname</label>
+              <input id="projectName" type="text" placeholder="z. B. Wappen Metalltafel" />
+            </div>
+            <div>
+              <label for="customerName">Kunde</label>
+              <input id="customerName" type="text" placeholder="z. B. FC Porto Fanclub" />
+            </div>
+          </div>
+          <div class="grid cols-1">
+            <div>
+              <label for="projectNote">Notiz</label>
+              <textarea id="projectNote" rows="3" placeholder="Optional: Besonderheiten, Finish, Sonderwünsche, Untergrund ..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title"><span class="badge">2</span>Grundtyp</div>
+          <div class="grid cols-2">
+            <div>
+              <label for="complexity">Grundkomplexität</label>
+              <select id="complexity">
+                <option value="normal">Normal</option>
+                <option value="complex" selected>Komplex</option>
+                <option value="super">Superkomplex</option>
+              </select>
+              <p class="hint">Grobe Selbsteinschätzung vor Detailgrad und Maskierungsaufwand.</p>
+            </div>
+            <div>
+              <label for="referenceQuality">Vorlagenqualität</label>
+              <select id="referenceQuality">
+                <option value="clean">Saubere Vorlage</option>
+                <option value="usable" selected>Brauchbar, aber Nacharbeit nötig</option>
+                <option value="rough">Schwach / unsauber / viel Aufbereitung</option>
+              </select>
+              <p class="hint">Beeinflusst Reinzeichnung und zusätzliche Vorarbeit.</p>
+            </div>
+          </div>
+
+          <div class="preset-row" id="presetRow"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title"><span class="badge">3</span>Objekt</div>
+          <div class="grid cols-2">
+            <div>
+              <label for="projectType">Objektart</label>
+              <select id="projectType">
+                <option value="flat" selected>Flächiges Bild / Tafel</option>
+                <option value="motoHelmet">Motorradhelm</option>
+                <option value="snowHelmet">Snowboardhelm</option>
+                <option value="tank">Tank</option>
+                <option value="tankParts">Tank + diverse Teile</option>
+              </select>
+            </div>
+            <div id="partsWrap" class="hidden">
+              <label for="partCount">Zusätzliche Teile</label>
+              <input id="partCount" type="number" min="1" max="10" step="1" value="2" />
+              <p class="hint">Z. B. Fender, Seitendeckel, Covers.</p>
+            </div>
+          </div>
+
+          <div id="flatWrap">
+            <div class="grid cols-2">
+              <div>
+                <label for="widthCm">Breite in cm</label>
+                <input id="widthCm" type="number" min="1" step="1" value="80" />
+              </div>
+              <div>
+                <label for="heightCm">Höhe in cm</label>
+                <input id="heightCm" type="number" min="1" step="1" value="100" />
+              </div>
+            </div>
+          </div>
+
+          <div class="object-info" id="objectInfo"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title"><span class="badge">4</span>Aufwand</div>
+          <div class="grid cols-3">
+            <div>
+              <label for="detailLevel">Detailgrad (1–10)</label>
+              <div class="range-wrap">
+                <input id="detailLevel" type="range" min="1" max="10" step="1" value="8" />
+                <span class="range-value" id="detailLevelValue">8</span>
+              </div>
+              <p class="hint">1 = einfache Flächen, 10 = Ornamente, Haare, sehr feine Strukturen.</p>
+            </div>
+            <div>
+              <label for="precisionLevel">Präzision / Maskierung (1–10)</label>
+              <div class="range-wrap">
+                <input id="precisionLevel" type="range" min="1" max="10" step="1" value="8" />
+                <span class="range-value" id="precisionLevelValue">8</span>
+              </div>
+              <p class="hint">1 = locker, 10 = scharfe Kanten, mehrere Maskiergänge, Logo-/Wappenqualität.</p>
+            </div>
+            <div>
+              <label for="colors">Farben / Farblagen</label>
+              <input id="colors" type="number" min="1" max="20" step="1" value="4" />
+              <p class="hint">Auch Schatten, Highlights, Gold oder zusätzliche Lagen mitzählen.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel result-panel">
+        <div class="result-top">
+          <p class="eyebrow">Empfohlene Offerte</p>
+          <div class="price" id="priceTarget">CHF 0</div>
+          <div class="price-range" id="priceRange">Angebotsspanne: CHF 0 – CHF 0</div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi">
+            <span>Äquivalente Fläche</span>
+            <strong id="areaEquivalent">0.00 m²</strong>
+          </div>
+          <div class="kpi">
+            <span>Geschätzte Stunden</span>
+            <strong id="hoursTotal">0.0 h</strong>
+          </div>
+          <div class="kpi">
+            <span>Arbeitsanteil</span>
+            <strong id="laborTotal">CHF 0</strong>
+          </div>
+          <div class="kpi">
+            <span>Materialanteil</span>
+            <strong id="materialTotal">CHF 0</strong>
+          </div>
+        </div>
+
+        <div class="formula-box" id="formulaText"></div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="pdfBtn">PDF exportieren</button>
+          <button type="button" class="btn btn-secondary" id="copyBtn">Zusammenfassung kopieren</button>
+          <button type="button" class="btn btn-ghost" id="resetBtn">Zurücksetzen</button>
+        </div>
+
+        <div class="summary-box">
+          <h3>Zusammenfassung</h3>
+          <div id="projectSummary"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
