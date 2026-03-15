@@ -1,22 +1,27 @@
-export const PRESETS = [
+window.FG_PRESETS = [
   {
     id: 'logo',
-    label: 'Logo',
-    values: { complexity: 'normal', detailLevel: 4, precisionLevel: 7, colors: 3 }
+    label: 'Logo / Schriftzug',
+    values: { detailLevel: 5, precisionLevel: 8, colors: 3 }
   },
   {
     id: 'wappen',
-    label: 'Wappen',
-    values: { complexity: 'super', detailLevel: 9, precisionLevel: 9, colors: 6 }
+    label: 'Wappen / Emblem',
+    values: { detailLevel: 8, precisionLevel: 9, colors: 6, complexity: 'complex' }
   },
   {
     id: 'portrait',
     label: 'Porträt',
-    values: { complexity: 'super', detailLevel: 10, precisionLevel: 7, colors: 5 }
+    values: { detailLevel: 9, precisionLevel: 7, colors: 8, complexity: 'super' }
   },
   {
     id: 'simple',
     label: 'Simple Shapes',
-    values: { complexity: 'normal', detailLevel: 2, precisionLevel: 3, colors: 2 }
+    values: { detailLevel: 2, precisionLevel: 4, colors: 2, complexity: 'normal' }
+  },
+  {
+    id: 'freehand',
+    label: 'Freihand-Design',
+    values: { detailLevel: 7, precisionLevel: 5, colors: 5, complexity: 'complex' }
   }
 ];

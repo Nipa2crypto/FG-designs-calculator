@@ -4,93 +4,122 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FG Designs – Kalkulator</title>
-  <meta name="description" content="Frontend-Kalkulator für FG Designs" />
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
   <div class="app-shell">
-    <header class="hero">
-      <div class="brand-lockup">
+    <header class="topbar">
+      <div class="brand">
         <img src="./assets/logo-fg.png" alt="FG Designs Logo" class="brand-logo" />
         <div>
-          <p class="eyebrow">FG Designs</p>
-          <h1>Kalkulator</h1>
-          <p class="hero-copy">Frontend-only, GitHub-Pages-tauglich und direkt einsatzbereit für Projektkalkulationen in CHF.</p>
+          <div class="brand-title">FG Designs</div>
+          <div class="brand-sub">Projekt-Kalkulator</div>
+        </div>
+      </div>
+      <div class="topbar-badge">Frontend only · GitHub Pages ready</div>
+    </header>
+
+    
+    <section class="print-quote" id="printQuote">
+      <div class="print-header">
+        <div class="print-brand">
+          <img src="./assets/logo-fg.png" alt="FG Designs Logo" class="print-logo" />
+          <div>
+            <div class="print-kicker">FG Designs &amp; Customs</div>
+            <div class="print-title">Kostenvoranschlag</div>
+          </div>
+        </div>
+        <div class="print-meta">
+          <div><strong>Projekt:</strong> <span id="printProjectName">–</span></div>
+          <div><strong>Kunde:</strong> <span id="printCustomerName">–</span></div>
+          <div><strong>Datum:</strong> <span id="printDate">–</span></div>
         </div>
       </div>
 
-      <div class="base-card">
-        <h2>Fixe Kalkulationsbasis</h2>
-        <div class="base-grid">
-          <div class="base-item">
-            <span>Stundensatz</span>
-            <strong id="baseHourlyRate">CHF 0</strong>
-          </div>
-          <div class="base-item">
-            <span>Material / m²</span>
-            <strong id="baseMaterialRate">CHF 0</strong>
-          </div>
-          <div class="base-item">
-            <span>Puffer</span>
-            <strong id="baseBuffer">0 %</strong>
-          </div>
-        </div>
-        <p class="muted small">Diese Werte sind fest im Code hinterlegt und nicht im Formular editierbar.</p>
+      <div class="print-note" id="printProjectNoteWrap">
+        <strong>Notiz:</strong> <span id="printProjectNote">–</span>
       </div>
-    </header>
+
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Pos.</th>
+            <th>Beschreibung</th>
+            <th class="right">Menge</th>
+            <th class="right">Ansatz</th>
+            <th class="right">Betrag</th>
+          </tr>
+        </thead>
+        <tbody id="printTableBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="right"><strong>Zwischensumme</strong></td>
+            <td class="right"><strong id="printSubtotal">CHF 0</strong></td>
+          </tr>
+          <tr>
+            <td colspan="4" class="right">Puffer</td>
+            <td class="right" id="printBuffer">CHF 0</td>
+          </tr>
+          <tr class="print-total-row">
+            <td colspan="4" class="right"><strong>Gesamtsumme</strong></td>
+            <td class="right"><strong id="printTotal">CHF 0</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
 
     <main class="layout">
       <section class="panel form-panel">
+        <div class="panel-head">
+          <h1>Kalkulation</h1>
+          <p>Objekt wählen, Aufwand bewerten und live die empfohlene Offerte sehen. Die Kalkulationsbasis startet mit euren Standardwerten, bleibt aber flexibel anpassbar.</p>
+        </div>
+
         <div class="section">
-          <div class="section-title"><span class="badge">1</span>Projekt</div>
-          <div class="grid cols-2">
-            <div>
+          <h2>Projekt</h2>
+          <div class="grid grid-2">
+            <div class="field">
               <label for="projectName">Projektname</label>
-              <input id="projectName" type="text" placeholder="z. B. Wappen Metalltafel" />
+              <input id="projectName" type="text" placeholder="z. B. Custom Helm Purple Black" />
             </div>
-            <div>
+            <div class="field">
               <label for="customerName">Kunde</label>
-              <input id="customerName" type="text" placeholder="z. B. FC Porto Fanclub" />
+              <input id="customerName" type="text" placeholder="z. B. Max Muster" />
             </div>
           </div>
-          <div class="grid cols-1">
-            <div>
-              <label for="projectNote">Notiz</label>
-              <textarea id="projectNote" rows="3" placeholder="Optional: Besonderheiten, Finish, Sonderwünsche, Untergrund ..."></textarea>
-            </div>
+          <div class="field">
+            <label for="projectNote">Notiz</label>
+            <textarea id="projectNote" rows="3" placeholder="Optional: Besonderheiten, Wünsche, Fristen ..."></textarea>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-title"><span class="badge">2</span>Grundtyp</div>
-          <div class="grid cols-2">
-            <div>
-              <label for="complexity">Grundkomplexität</label>
+          <h2>1 · Grundkomplexität</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="complexity">Selbsteinschätzung</label>
               <select id="complexity">
                 <option value="normal">Normal</option>
                 <option value="complex" selected>Komplex</option>
                 <option value="super">Superkomplex</option>
               </select>
-              <p class="hint">Grobe Selbsteinschätzung vor Detailgrad und Maskierungsaufwand.</p>
             </div>
-            <div>
+            <div class="field">
               <label for="referenceQuality">Vorlagenqualität</label>
               <select id="referenceQuality">
                 <option value="clean">Saubere Vorlage</option>
                 <option value="usable" selected>Brauchbar, aber Nacharbeit nötig</option>
                 <option value="rough">Schwach / unsauber / viel Aufbereitung</option>
               </select>
-              <p class="hint">Beeinflusst Reinzeichnung und zusätzliche Vorarbeit.</p>
             </div>
           </div>
-
-          <div class="preset-row" id="presetRow"></div>
         </div>
 
         <div class="section">
-          <div class="section-title"><span class="badge">3</span>Objekt</div>
-          <div class="grid cols-2">
-            <div>
+          <h2>2 · Objekt / Grösse</h2>
+          <div class="grid grid-2">
+            <div class="field">
               <label for="projectType">Objektart</label>
               <select id="projectType">
                 <option value="flat" selected>Flächiges Bild / Tafel</option>
@@ -100,100 +129,162 @@
                 <option value="tankParts">Tank + diverse Teile</option>
               </select>
             </div>
-            <div id="partsWrap" class="hidden">
+            <div class="field">
+              <label for="preset">Preset</label>
+              <select id="preset">
+                <option value="">Kein Preset</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="flatFields" class="grid grid-2">
+            <div class="field">
+              <label for="widthCm">Breite in cm</label>
+              <input id="widthCm" type="number" min="1" value="80" />
+            </div>
+            <div class="field">
+              <label for="heightCm">Höhe in cm</label>
+              <input id="heightCm" type="number" min="1" value="100" />
+            </div>
+          </div>
+
+          <div id="partsFields" class="grid grid-2 hidden">
+            <div class="field">
               <label for="partCount">Zusätzliche Teile</label>
-              <input id="partCount" type="number" min="1" max="10" step="1" value="2" />
-              <p class="hint">Z. B. Fender, Seitendeckel, Covers.</p>
+              <input id="partCount" type="number" min="1" max="10" value="2" />
+            </div>
+            <div class="field">
+              <label for="partsType">Typisch z. B.</label>
+              <input id="partsType" type="text" value="Fender / Seitendeckel / Covers" />
             </div>
           </div>
 
-          <div id="flatWrap">
-            <div class="grid cols-2">
-              <div>
-                <label for="widthCm">Breite in cm</label>
-                <input id="widthCm" type="number" min="1" step="1" value="80" />
-              </div>
-              <div>
-                <label for="heightCm">Höhe in cm</label>
-                <input id="heightCm" type="number" min="1" step="1" value="100" />
-              </div>
-            </div>
-          </div>
-
-          <div class="object-info" id="objectInfo"></div>
+          <div class="inline-info" id="objectInfo"></div>
         </div>
 
         <div class="section">
-          <div class="section-title"><span class="badge">4</span>Aufwand</div>
-          <div class="grid cols-3">
-            <div>
-              <label for="detailLevel">Detailgrad (1–10)</label>
-              <div class="range-wrap">
-                <input id="detailLevel" type="range" min="1" max="10" step="1" value="8" />
-                <span class="range-value" id="detailLevelValue">8</span>
+          <h2>3 · Aufwandstreiber</h2>
+          <div class="grid grid-3">
+            <div class="field">
+              <label for="detailLevel">Detailgrad</label>
+              <div class="range-row">
+                <input id="detailLevel" type="range" min="1" max="10" value="8" />
+                <span id="detailLevelValue" class="range-chip">8</span>
               </div>
-              <p class="hint">1 = einfache Flächen, 10 = Ornamente, Haare, sehr feine Strukturen.</p>
+              <div class="hint">1 = einfache Flächen, 10 = extrem fein / Haar / Ornament / Emblem</div>
             </div>
-            <div>
-              <label for="precisionLevel">Präzision / Maskierung (1–10)</label>
-              <div class="range-wrap">
-                <input id="precisionLevel" type="range" min="1" max="10" step="1" value="8" />
-                <span class="range-value" id="precisionLevelValue">8</span>
+            <div class="field">
+              <label for="precisionLevel">Präzision / Maskierung</label>
+              <div class="range-row">
+                <input id="precisionLevel" type="range" min="1" max="10" value="8" />
+                <span id="precisionLevelValue" class="range-chip">8</span>
               </div>
-              <p class="hint">1 = locker, 10 = scharfe Kanten, mehrere Maskiergänge, Logo-/Wappenqualität.</p>
+              <div class="hint">1 = frei / grob, 10 = sehr saubere Kanten / viele Maskiergänge</div>
             </div>
-            <div>
+            <div class="field">
               <label for="colors">Farben / Farblagen</label>
-              <input id="colors" type="number" min="1" max="20" step="1" value="4" />
-              <p class="hint">Auch Schatten, Highlights, Gold oder zusätzliche Lagen mitzählen.</p>
+              <input id="colors" type="number" min="1" max="20" value="7" />
+              <div class="hint">Zusätzliche Lagen, Highlights, Schatten, Metallic usw. mitzählen</div>
             </div>
           </div>
+        </div>
+
+        <div class="section actions-row">
+          <button id="resetBtn" class="btn btn-secondary" type="button">Leeren / Standardwerte</button>
+          <button id="copyBtn" class="btn btn-secondary" type="button">Zusammenfassung kopieren</button>
+          <button id="pdfBtn" class="btn btn-primary" type="button">PDF exportieren</button>
         </div>
       </section>
 
       <aside class="panel result-panel">
-        <div class="result-top">
-          <p class="eyebrow">Empfohlene Offerte</p>
-          <div class="price" id="priceTarget">CHF 0</div>
-          <div class="price-range" id="priceRange">Angebotsspanne: CHF 0 – CHF 0</div>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi">
-            <span>Äquivalente Fläche</span>
-            <strong id="areaEquivalent">0.00 m²</strong>
+        <div class="result-sticky">
+          <div class="panel-head">
+            <h2>Kalkulationsbasis</h2>
+            <p>Startet mit euren Standardwerten, kann aber pro Projekt angepasst werden.</p>
           </div>
-          <div class="kpi">
-            <span>Geschätzte Stunden</span>
-            <strong id="hoursTotal">0.0 h</strong>
-          </div>
-          <div class="kpi">
-            <span>Arbeitsanteil</span>
-            <strong id="laborTotal">CHF 0</strong>
-          </div>
-          <div class="kpi">
-            <span>Materialanteil</span>
-            <strong id="materialTotal">CHF 0</strong>
-          </div>
-        </div>
 
-        <div class="formula-box" id="formulaText"></div>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="hourlyRate">Stundensatz</label>
+              <input id="hourlyRate" type="number" min="0" step="1" value="30" />
+            </div>
+            <div class="field">
+              <label for="materialRate">Material / m²</label>
+              <input id="materialRate" type="number" min="0" step="1" value="100" />
+            </div>
+            <div class="field">
+              <label for="consumableRate">Verbrauchsmaterial / h</label>
+              <input id="consumableRate" type="number" min="0" step="1" value="5" />
+            </div>
+            <div class="field">
+              <label for="buffer">Puffer (%)</label>
+              <input id="buffer" type="number" min="0" step="1" value="10" />
+            </div>
+          </div>
 
-        <div class="actions">
-          <button type="button" class="btn btn-primary" id="pdfBtn">PDF exportieren</button>
-          <button type="button" class="btn btn-secondary" id="copyBtn">Zusammenfassung kopieren</button>
-          <button type="button" class="btn btn-ghost" id="resetBtn">Zurücksetzen</button>
-        </div>
+          <div class="fixed-grid">
+            <div class="fixed-card"><span>Materialsockel</span><strong id="cfgMaterialBase">CHF 0</strong></div>
+            <div class="fixed-card"><span>Basis h/m²</span><strong id="cfgBaseHours">0.0 h</strong></div>
+          </div>
 
-        <div class="summary-box">
-          <h3>Zusammenfassung</h3>
-          <div id="projectSummary"></div>
+          <div class="section">
+            <h2>Zusatzkosten</h2>
+            <div class="grid grid-2">
+              <div class="field">
+                <label for="preWorkNeeded">Vorarbeiten nötig</label>
+                <select id="preWorkNeeded">
+                  <option value="no" selected>Nein</option>
+                  <option value="yes">Ja</option>
+                </select>
+              </div>
+              <div class="field" id="preWorkHoursWrap">
+                <label for="preWorkHours">Stunden Vorarbeiten</label>
+                <input id="preWorkHours" type="number" min="0" step="0.5" value="0" />
+              </div>
+              <div class="field">
+                <label for="specialMaterialName">Sondermaterial</label>
+                <input id="specialMaterialName" type="text" placeholder="z. B. Blattgold, Candy, Spezialklarlack" />
+              </div>
+              <div class="field">
+                <label for="specialMaterialCost">Sondermaterial Kosten</label>
+                <input id="specialMaterialCost" type="number" min="0" step="1" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="panel-head compact-head">
+            <h2>Empfohlene Offerte</h2>
+            <p>Zielwert inkl. eingestelltem Puffer.</p>
+          </div>
+
+          <div class="price-block">
+            <div class="price-label">Zielpreis</div>
+            <div class="price-value" id="priceTarget">CHF 0</div>
+            <div class="price-range" id="priceRange">Angebotsspanne: CHF 0 – CHF 0</div>
+          </div>
+
+          <div class="result-grid">
+            <div class="result-card"><span>Äquivalente Fläche</span><strong id="areaEquivalent">0.00 m²</strong></div>
+            <div class="result-card"><span>Geschätzte Stunden</span><strong id="hoursTotal">0.0 h</strong></div>
+            <div class="result-card"><span>Arbeitsanteil</span><strong id="laborTotal">CHF 0</strong></div>
+            <div class="result-card"><span>Materialanteil</span><strong id="materialTotal">CHF 0</strong></div>
+            <div class="result-card"><span>Verbrauchsmaterial</span><strong id="consumableTotal">CHF 0</strong></div>
+            <div class="result-card"><span>Vorarbeiten</span><strong id="preWorkTotal">CHF 0</strong></div>
+            <div class="result-card"><span>Sondermaterial</span><strong id="specialMaterialTotal">CHF 0</strong></div>
+            <div class="result-card"><span>Zwischensumme</span><strong id="subtotalTotal">CHF 0</strong></div>
+          </div>
+
+          <div class="formula-box" id="formulaText"></div>
+          <div class="summary-box" id="summaryPreview"></div>
         </div>
       </aside>
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script type="module" src="./js/app.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/presets.js"></script>
+  <script src="./js/app.js"></script>
 </body>
 </html>

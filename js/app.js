@@ -1,308 +1,401 @@
-import { BASE, DEFAULTS, complexityConfig, referenceExtraHours, projectConfig, REFERENCE_LABELS } from './config.js';
-import { PRESETS } from './presets.js';
+(() => {
+  const cfg = window.FG_CONFIG;
+  const presets = window.FG_PRESETS || [];
+  const $ = (id) => document.getElementById(id);
 
-const el = (id) => document.getElementById(id);
+  const ids = [
+    'projectName','customerName','projectNote','complexity','referenceQuality','projectType','preset',
+    'widthCm','heightCm','partCount','partsType','detailLevel','precisionLevel','colors',
+    'hourlyRate','materialRate','consumableRate','buffer','preWorkNeeded','preWorkHours','specialMaterialName','specialMaterialCost'
+  ];
 
-function clampNumber(value, min, max, fallback) {
-  const n = Number(value);
-  if (Number.isNaN(n)) return fallback;
-  return Math.min(max, Math.max(min, n));
-}
+  const complexityConfig = (level) => {
+    if (level === 'normal') return { multiplier: 1.0, setupHours: 1.2, name: 'Normal' };
+    if (level === 'complex') return { multiplier: 1.35, setupHours: 2.4, name: 'Komplex' };
+    return { multiplier: 1.78, setupHours: 3.9, name: 'Superkomplex' };
+  };
 
-function formatCurrency(value) {
-  return new Intl.NumberFormat(BASE.defaultDateLocale, {
+  const referenceExtraHours = (type) => {
+    if (type === 'clean') return 0;
+    if (type === 'usable') return 0.6;
+    return 1.4;
+  };
+
+  const clamp = (value, min, max, fallback) => {
+    const n = Number(value);
+    if (Number.isNaN(n)) return fallback;
+    return Math.min(max, Math.max(min, n));
+  };
+
+  const currency = (value) => new Intl.NumberFormat('de-CH', {
     style: 'currency',
-    currency: BASE.currency,
+    currency: cfg.currency,
     maximumFractionDigits: 0
   }).format(value);
-}
 
-function formatNumber(value, digits = 2) {
-  return new Intl.NumberFormat(BASE.defaultDateLocale, {
+  const num = (value, digits = 2) => new Intl.NumberFormat('de-CH', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
   }).format(value);
-}
 
-function todayString() {
-  return new Intl.DateTimeFormat(BASE.defaultDateLocale, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  }).format(new Date());
-}
-
-function slugify(value) {
-  return (value || 'fg-designs-kalkulation')
-    .toLowerCase()
-    .trim()
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
-    .replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'fg-designs-kalkulation';
-}
-
-function getValues() {
-  return {
-    projectName: el('projectName').value.trim(),
-    customerName: el('customerName').value.trim(),
-    projectNote: el('projectNote').value.trim(),
-    complexity: el('complexity').value,
-    referenceQuality: el('referenceQuality').value,
-    projectType: el('projectType').value,
-    partCount: clampNumber(el('partCount').value, 1, 10, DEFAULTS.partCount),
-    widthCm: clampNumber(el('widthCm').value, 1, 5000, DEFAULTS.widthCm),
-    heightCm: clampNumber(el('heightCm').value, 1, 5000, DEFAULTS.heightCm),
-    detailLevel: clampNumber(el('detailLevel').value, 1, 10, DEFAULTS.detailLevel),
-    precisionLevel: clampNumber(el('precisionLevel').value, 1, 10, DEFAULTS.precisionLevel),
-    colors: clampNumber(el('colors').value, 1, 20, DEFAULTS.colors)
-  };
-}
-
-function buildSummaryHtml(v, calc, proj, comp) {
-  const items = [
-    `<li><strong>Projekt:</strong> ${v.projectName || '–'}</li>`,
-    `<li><strong>Kunde:</strong> ${v.customerName || '–'}</li>`,
-    `<li><strong>Objekt:</strong> ${proj.name}</li>`,
-    `<li><strong>Grundkomplexität:</strong> ${comp.name}</li>`,
-    `<li><strong>Vorlagenqualität:</strong> ${REFERENCE_LABELS[v.referenceQuality]}</li>`,
-    v.projectType === 'flat' ? `<li><strong>Grösse:</strong> ${v.widthCm} × ${v.heightCm} cm</li>` : '',
-    `<li><strong>Detailgrad:</strong> ${v.detailLevel}/10</li>`,
-    `<li><strong>Präzision:</strong> ${v.precisionLevel}/10</li>`,
-    `<li><strong>Farblagen:</strong> ${v.colors}</li>`,
-    `<li><strong>Preisziel:</strong> ${formatCurrency(calc.target)}</li>`
-  ].filter(Boolean).join('');
-  return `<ul>${items}</ul>`;
-}
-
-function calculate() {
-  const v = getValues();
-  const comp = complexityConfig(v.complexity);
-  const proj = projectConfig(v.projectType, v.partCount);
-  const refHours = referenceExtraHours(v.referenceQuality);
-
-  const area = v.projectType === 'flat'
-    ? (v.widthCm * v.heightCm) / 10000
-    : proj.area;
-
-  const detailFactor = 0.82 + (v.detailLevel * 0.08);
-  const precisionFactor = 0.86 + (v.precisionLevel * 0.07);
-  const colorsFactor = 1 + (Math.max(0, v.colors - 2) * 0.05);
-
-  const productionHours = area
-    * BASE.productionHoursPerM2
-    * comp.multiplier
-    * detailFactor
-    * precisionFactor
-    * colorsFactor
-    * proj.surfaceFactor;
-
-  const totalHours = comp.setupHours + proj.objectBaseHours + refHours + productionHours;
-  const labor = totalHours * BASE.hourlyRate;
-  const material = area * BASE.materialRatePerM2 * (1 + ((v.colors - 1) * 0.08));
-  const subtotal = labor + material;
-  const target = subtotal * (1 + (BASE.bufferPercent / 100));
-  const low = target * 0.9;
-  const high = target * 1.1;
-
-  const calc = { area, productionHours, totalHours, labor, material, subtotal, target, low, high, detailFactor, precisionFactor, colorsFactor, refHours };
-
-  el('priceTarget').textContent = formatCurrency(target);
-  el('priceRange').textContent = `Angebotsspanne: ${formatCurrency(low)} – ${formatCurrency(high)}`;
-  el('areaEquivalent').textContent = `${formatNumber(area)} m²`;
-  el('hoursTotal').textContent = `${formatNumber(totalHours, 1)} h`;
-  el('laborTotal').textContent = formatCurrency(labor);
-  el('materialTotal').textContent = formatCurrency(material);
-  el('detailLevelValue').textContent = v.detailLevel;
-  el('precisionLevelValue').textContent = v.precisionLevel;
-  el('objectInfo').innerHTML = `<strong>Objektlogik:</strong> ${proj.info} <br><strong>Flächenlogik:</strong> ${proj.areaText}`;
-  el('projectSummary').innerHTML = buildSummaryHtml(v, calc, proj, comp);
-
-  el('formulaText').innerHTML = `
-    <strong>Rechenlogik:</strong><br>
-    Stunden = Setup (${formatNumber(comp.setupHours, 1)} h) + Objektbasis (${formatNumber(proj.objectBaseHours, 1)} h) + Vorlagenaufbereitung (${formatNumber(refHours, 1)} h) + Produktionszeit.<br>
-    Produktionszeit = Fläche × ${formatNumber(BASE.productionHoursPerM2, 1)} h/m² × Komplexität (${formatNumber(comp.multiplier, 2)}) × Detail (${formatNumber(detailFactor, 2)}) × Präzision (${formatNumber(precisionFactor, 2)}) × Farben (${formatNumber(colorsFactor, 2)}) × Oberflächenfaktor (${formatNumber(proj.surfaceFactor, 2)}).<br><br>
-    <strong>Fix hinterlegt:</strong> ${formatCurrency(BASE.hourlyRate)} / h, ${formatCurrency(BASE.materialRatePerM2)} pro m², ${BASE.bufferPercent} % Puffer.
-  `;
-
-  window.currentCalculation = { values: v, comp, proj, calc };
-}
-
-function handleProjectTypeChange() {
-  const type = el('projectType').value;
-  el('flatWrap').classList.toggle('hidden', type !== 'flat');
-  el('partsWrap').classList.toggle('hidden', type !== 'tankParts');
-  calculate();
-}
-
-function resetForm() {
-  Object.entries(DEFAULTS).forEach(([key, value]) => {
-    if (el(key)) el(key).value = value;
-  });
-  handleProjectTypeChange();
-  calculate();
-}
-
-function applyPreset(values) {
-  Object.entries(values).forEach(([key, value]) => {
-    if (el(key)) el(key).value = value;
-  });
-  calculate();
-}
-
-function renderPresets() {
-  const row = el('presetRow');
-  row.innerHTML = PRESETS.map((preset) => `
-    <button type="button" class="preset-chip" data-preset="${preset.id}">${preset.label}</button>
-  `).join('');
-  row.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-preset]');
-    if (!button) return;
-    const preset = PRESETS.find((item) => item.id === button.dataset.preset);
-    if (preset) applyPreset(preset.values);
-  });
-}
-
-async function exportPdf() {
-  const state = window.currentCalculation;
-  if (!state) return;
-  const { values: v, comp, proj, calc } = state;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-
-  const margin = 16;
-  let y = 18;
-
-  doc.setFillColor(10, 8, 16);
-  doc.rect(0, 0, 210, 297, 'F');
-
-  doc.setFillColor(122, 63, 212);
-  doc.roundedRect(margin, y, 178, 24, 4, 4, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.text('FG Designs – Kalkulation', margin + 8, y + 15);
-
-  y += 34;
-  doc.setFontSize(10);
-  doc.setTextColor(220, 220, 230);
-  doc.text(`Datum: ${todayString()}`, margin, y);
-  doc.text(`Projekt: ${v.projectName || '–'}`, margin + 58, y);
-  doc.text(`Kunde: ${v.customerName || '–'}`, margin + 118, y);
-
-  y += 10;
-
-  const addBlock = (title, lines) => {
-    doc.setFillColor(22, 20, 33);
-    doc.roundedRect(margin, y, 178, 8 + (lines.length * 7), 3, 3, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(245, 245, 250);
-    doc.text(title, margin + 6, y + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(215, 215, 225);
-    lines.forEach((line, index) => {
-      doc.text(line, margin + 6, y + 13 + (index * 7));
-    });
-    y += 14 + (lines.length * 7);
-  };
-
-  addBlock('Eckdaten', [
-    `Objekt: ${proj.name}`,
-    `Grundkomplexität: ${comp.name}`,
-    `Vorlagenqualität: ${REFERENCE_LABELS[v.referenceQuality]}`,
-    v.projectType === 'flat' ? `Grösse: ${v.widthCm} × ${v.heightCm} cm` : `Flächenlogik: ${proj.areaText}`
-  ]);
-
-  addBlock('Bewertung', [
-    `Detailgrad: ${v.detailLevel}/10`,
-    `Präzision / Maskierung: ${v.precisionLevel}/10`,
-    `Farben / Farblagen: ${v.colors}`,
-    `Geschätzte Stunden: ${formatNumber(calc.totalHours, 1)} h`
-  ]);
-
-  addBlock('Ergebnis', [
-    `Äquivalente Fläche: ${formatNumber(calc.area)} m²`,
-    `Arbeitsanteil: ${formatCurrency(calc.labor)}`,
-    `Materialanteil: ${formatCurrency(calc.material)}`,
-    `Preisziel inkl. Puffer: ${formatCurrency(calc.target)}`,
-    `Angebotsspanne: ${formatCurrency(calc.low)} – ${formatCurrency(calc.high)}`
-  ]);
-
-  if (v.projectNote) {
-    const split = doc.splitTextToSize(`Notiz: ${v.projectNote}`, 164);
-    addBlock('Notiz', split);
+  function formatRatePerHour(value) {
+    return `${currency(value)}/h`;
   }
 
-  doc.setFontSize(9);
-  doc.setTextColor(170, 170, 185);
-  doc.text(`Fixe Basis: ${formatCurrency(BASE.hourlyRate)} / h · ${formatCurrency(BASE.materialRatePerM2)} pro m² · ${BASE.bufferPercent} % Puffer`, margin, 286);
+  function formatRatePerSquare(value) {
+    return `${currency(value)}/m²`;
+  }
 
-  const filename = `${slugify(v.projectName || v.customerName || 'fg-designs-kalkulation')}_${todayString().replaceAll('.', '-')}.pdf`;
-  doc.save(filename);
-}
+  function setText(id, value) {
+    const node = $(id);
+    if (node) node.textContent = value;
+  }
 
-async function copySummary() {
-  const state = window.currentCalculation;
-  if (!state) return;
-  const { values: v, comp, proj, calc } = state;
-  const text = [
-    'FG Designs – Kalkulation',
-    `Datum: ${todayString()}`,
-    `Projekt: ${v.projectName || '–'}`,
-    `Kunde: ${v.customerName || '–'}`,
-    `Objekt: ${proj.name}`,
-    `Grundkomplexität: ${comp.name}`,
-    `Vorlagenqualität: ${REFERENCE_LABELS[v.referenceQuality]}`,
-    v.projectType === 'flat' ? `Grösse: ${v.widthCm} × ${v.heightCm} cm` : `Flächenlogik: ${proj.areaText}`,
-    `Detailgrad: ${v.detailLevel}/10`,
-    `Präzision: ${v.precisionLevel}/10`,
-    `Farblagen: ${v.colors}`,
-    `Äquivalente Fläche: ${formatNumber(calc.area)} m²`,
-    `Geschätzte Stunden: ${formatNumber(calc.totalHours, 1)} h`,
-    `Preisziel: ${formatCurrency(calc.target)}`,
-    `Angebotsspanne: ${formatCurrency(calc.low)} – ${formatCurrency(calc.high)}`,
-    v.projectNote ? `Notiz: ${v.projectNote}` : ''
-  ].filter(Boolean).join('\n');
+  function buildPrintRows(rows) {
+    const body = $('printTableBody');
+    if (!body) return;
+    body.innerHTML = rows.map((row, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${row.label}</td>
+        <td class="right">${row.qty}</td>
+        <td class="right">${row.rate}</td>
+        <td class="right">${row.total}</td>
+      </tr>
+    `).join('');
+  }
 
-  await navigator.clipboard.writeText(text);
-}
+  function updatePrintQuote(data) {
+    setText('printProjectName', data.values.projectName || '–');
+    setText('printCustomerName', data.values.customerName || '–');
+    setText('printDate', new Intl.DateTimeFormat('de-CH').format(new Date()));
 
-function initBaseCards() {
-  el('baseHourlyRate').textContent = formatCurrency(BASE.hourlyRate);
-  el('baseMaterialRate').textContent = formatCurrency(BASE.materialRatePerM2);
-  el('baseBuffer').textContent = `${BASE.bufferPercent} %`;
-}
-
-function bindEvents() {
-  document.querySelectorAll('input, select, textarea').forEach((node) => {
-    node.addEventListener('input', calculate);
-    node.addEventListener('change', calculate);
-  });
-
-  el('projectType').addEventListener('change', handleProjectTypeChange);
-  el('resetBtn').addEventListener('click', resetForm);
-  el('pdfBtn').addEventListener('click', exportPdf);
-  el('copyBtn').addEventListener('click', async () => {
-    try {
-      await copySummary();
-      const original = el('copyBtn').textContent;
-      el('copyBtn').textContent = 'Kopiert';
-      setTimeout(() => { el('copyBtn').textContent = original; }, 1200);
-    } catch {
-      alert('Kopieren hat nicht funktioniert.');
+    const noteWrap = $('printProjectNoteWrap');
+    if (data.values.projectNote) {
+      noteWrap.style.display = 'block';
+      setText('printProjectNote', data.values.projectNote);
+    } else {
+      noteWrap.style.display = 'none';
+      setText('printProjectNote', '–');
     }
-  });
-}
 
-function init() {
-  initBaseCards();
-  renderPresets();
+    const rows = [
+      {
+        label: `Grundaufwand ${data.compName}`,
+        qty: `${num(data.compSetupHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.compSetupCost)
+      }
+    ];
+
+    if (data.referenceHours > 0) {
+      rows.push({
+        label: `Vorlagenaufbereitung (${data.referenceLabel})`,
+        qty: `${num(data.referenceHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.referenceCost)
+      });
+    }
+
+    if (data.objectBaseHours > 0) {
+      rows.push({
+        label: `Objektbasis ${data.projectNameResolved}`,
+        qty: `${num(data.objectBaseHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.objectBaseCost)
+      });
+    }
+
+    rows.push({
+      label: `Produktionszeit ${data.projectNameResolved} · Detail ${data.values.detailLevel}/10 · Präzision ${data.values.precisionLevel}/10 · ${data.values.colors} Farben`,
+      qty: `${num(data.productionHours, 1)} h`,
+      rate: formatRatePerHour(data.values.hourlyRate),
+      total: currency(data.productionCost)
+    });
+
+    if (data.values.preWorkNeeded === 'yes' && data.values.preWorkHours > 0) {
+      rows.push({
+        label: 'Vorarbeiten zusätzlich',
+        qty: `${num(data.values.preWorkHours, 1)} h`,
+        rate: formatRatePerHour(data.values.hourlyRate),
+        total: currency(data.preWorkCost)
+      });
+    }
+
+    rows.push({
+      label: `Material Grundbedarf (${num(data.area)} m²)`,
+      qty: `${num(data.area)} m²`,
+      rate: formatRatePerSquare(data.values.materialRate),
+      total: currency(data.material)
+    });
+
+    rows.push({
+      label: 'Verbrauchsmaterial',
+      qty: `${num(data.totalHours, 1)} h`,
+      rate: formatRatePerHour(data.values.consumableRate),
+      total: currency(data.consumables)
+    });
+
+    if (data.values.specialMaterialCost > 0) {
+      rows.push({
+        label: data.values.specialMaterialName ? `Sondermaterial: ${data.values.specialMaterialName}` : 'Sondermaterial',
+        qty: '1',
+        rate: currency(data.values.specialMaterialCost),
+        total: currency(data.values.specialMaterialCost)
+      });
+    }
+
+    buildPrintRows(rows);
+    setText('printSubtotal', currency(data.subtotal));
+    setText('printBuffer', currency(data.target - data.subtotal));
+    setText('printTotal', currency(data.target));
+  }
+
+  function tankPartsConfig(partCount, partsType) {
+    return {
+      name: `Tank + ${partCount} Teil(e)`,
+      area: 0.46 + (partCount * 0.11),
+      objectBaseHours: 1.8 + (partCount * 0.55),
+      surfaceFactor: 1.36,
+      info: `Tank mit ${partCount} Zusatzteil(en) (${partsType || 'diverse Teile'}). Pro Teil werden feste Vergleichsfläche und Zusatzstunden ergänzt.`
+    };
+  }
+
+  function getProjectConfig(type, partCount, partsType) {
+    if (type === 'tankParts') return tankPartsConfig(partCount, partsType);
+    return cfg.objects[type];
+  }
+
+  function getValues() {
+    return {
+      projectName: $('projectName').value.trim(),
+      customerName: $('customerName').value.trim(),
+      projectNote: $('projectNote').value.trim(),
+      hourlyRate: clamp($('hourlyRate').value, 0, 10000, cfg.defaults.hourlyRate),
+      materialRate: clamp($('materialRate').value, 0, 10000, cfg.defaults.materialRate),
+      consumableRate: clamp($('consumableRate').value, 0, 10000, cfg.defaults.consumableRate),
+      buffer: clamp($('buffer').value, 0, 1000, cfg.defaults.buffer),
+      preWorkNeeded: $('preWorkNeeded').value,
+      preWorkHours: clamp($('preWorkHours').value, 0, 1000, 0),
+      specialMaterialName: $('specialMaterialName').value.trim(),
+      specialMaterialCost: clamp($('specialMaterialCost').value, 0, 100000, 0),
+      complexity: $('complexity').value,
+      referenceQuality: $('referenceQuality').value,
+      projectType: $('projectType').value,
+      preset: $('preset').value,
+      widthCm: clamp($('widthCm').value, 1, 5000, cfg.defaults.widthCm),
+      heightCm: clamp($('heightCm').value, 1, 5000, cfg.defaults.heightCm),
+      partCount: clamp($('partCount').value, 1, 10, cfg.defaults.partCount),
+      partsType: $('partsType').value.trim(),
+      detailLevel: clamp($('detailLevel').value, 1, 10, cfg.defaults.detailLevel),
+      precisionLevel: clamp($('precisionLevel').value, 1, 10, cfg.defaults.precisionLevel),
+      colors: clamp($('colors').value, 1, 20, cfg.defaults.colors),
+    };
+  }
+
+  function updateStaticConfigView() {
+    $('cfgMaterialBase').textContent = currency(cfg.materialBase);
+    $('cfgBaseHours').textContent = `${num(cfg.productionHoursPerM2, 1)} h`;
+  }
+
+  function populatePresets() {
+    const select = $('preset');
+    presets.forEach((preset) => {
+      const option = document.createElement('option');
+      option.value = preset.id;
+      option.textContent = preset.label;
+      select.appendChild(option);
+    });
+  }
+
+  function applyPreset(presetId) {
+    if (!presetId) return;
+    const preset = presets.find(p => p.id === presetId);
+    if (!preset) return;
+    Object.entries(preset.values).forEach(([key, value]) => {
+      if ($(key)) $(key).value = value;
+    });
+    calculate();
+  }
+
+  function toggleObjectFields() {
+    const type = $('projectType').value;
+    $('flatFields').classList.toggle('hidden', type !== 'flat');
+    $('partsFields').classList.toggle('hidden', type !== 'tankParts');
+  }
+
+  function toggleExtraCostFields() {
+    const showPreWork = $('preWorkNeeded').value === 'yes';
+    $('preWorkHoursWrap').classList.toggle('hidden', !showPreWork);
+    if (!showPreWork) $('preWorkHours').value = 0;
+  }
+
+  function buildSummary(data) {
+    const lines = [
+      'FG Designs – Kalkulationszusammenfassung',
+      data.values.projectName ? `Projekt: ${data.values.projectName}` : null,
+      data.values.customerName ? `Kunde: ${data.values.customerName}` : null,
+      `Objekt: ${data.projectNameResolved}`,
+      `Grundkomplexität: ${data.compName}`,
+      `Vorlagenqualität: ${data.referenceLabel}`,
+      data.dimensions ? `Grösse: ${data.dimensions}` : null,
+      `Stundensatz: ${currency(data.values.hourlyRate)}`,
+      `Material / m²: ${currency(data.values.materialRate)}`,
+      `Verbrauchsmaterial / h: ${currency(data.values.consumableRate)}`,
+      `Vorarbeiten nötig: ${data.values.preWorkNeeded === 'yes' ? 'Ja' : 'Nein'}`,
+      data.values.preWorkNeeded === 'yes' ? `Vorarbeiten Stunden: ${num(data.values.preWorkHours, 1)} h` : null,
+      data.values.specialMaterialName ? `Sondermaterial: ${data.values.specialMaterialName}` : null,
+      data.values.specialMaterialCost > 0 ? `Sondermaterial Kosten: ${currency(data.values.specialMaterialCost)}` : null,
+      `Puffer: ${data.values.buffer}%`,
+      `Äquivalente Fläche: ${num(data.area)} m²`,
+      `Detailgrad: ${data.values.detailLevel}/10`,
+      `Präzision/Maskierung: ${data.values.precisionLevel}/10`,
+      `Farben/Farblagen: ${data.values.colors}`,
+      `Geschätzte Stunden: ${num(data.totalHours, 1)} h`,
+      `Arbeitsanteil: ${currency(data.labor)}`,
+      `Materialanteil: ${currency(data.material)}`,
+      `Verbrauchsmaterial gesamt: ${currency(data.consumables)}`,
+      `Vorarbeiten gesamt: ${currency(data.preWorkCost)}`,
+      `Sondermaterial gesamt: ${currency(data.specialMaterialCost)}`,
+      `Zwischensumme: ${currency(data.subtotal)}`,
+      `Empfohlener Zielpreis: ${currency(data.target)}`,
+      `Angebotsspanne: ${currency(data.low)} – ${currency(data.high)}`,
+      data.values.projectNote ? `Notiz: ${data.values.projectNote}` : null,
+    ].filter(Boolean);
+    return lines.join('\n');
+  }
+
+  function calculate() {
+    toggleObjectFields();
+    toggleExtraCostFields();
+
+    const v = getValues();
+    const comp = complexityConfig(v.complexity);
+    const refHours = referenceExtraHours(v.referenceQuality);
+    const proj = getProjectConfig(v.projectType, v.partCount, v.partsType);
+
+    const area = v.projectType === 'flat'
+      ? (v.widthCm * v.heightCm) / 10000
+      : proj.area;
+
+    const detailFactor = 0.82 + (v.detailLevel * 0.08);
+    const precisionFactor = 0.86 + (v.precisionLevel * 0.07);
+    const colorsFactor = 1 + (Math.max(0, v.colors - 2) * 0.05);
+
+    const productionHours = area
+      * cfg.productionHoursPerM2
+      * comp.multiplier
+      * detailFactor
+      * precisionFactor
+      * colorsFactor
+      * proj.surfaceFactor;
+
+    const totalHours = comp.setupHours + proj.objectBaseHours + refHours + productionHours;
+    const labor = totalHours * v.hourlyRate;
+    const material = (area * v.materialRate * (1 + ((v.colors - 1) * 0.08))) + cfg.materialBase;
+    const consumables = totalHours * v.consumableRate;
+    const preWorkCost = (v.preWorkNeeded === 'yes' ? v.preWorkHours : 0) * v.hourlyRate;
+    const specialMaterialCost = v.specialMaterialCost;
+    const subtotal = labor + material + consumables + preWorkCost + specialMaterialCost;
+    const target = subtotal * (1 + (v.buffer / 100));
+    const low = target * 0.9;
+    const high = target * 1.1;
+
+    $('detailLevelValue').textContent = v.detailLevel;
+    $('precisionLevelValue').textContent = v.precisionLevel;
+    $('objectInfo').innerHTML = `<strong>Objektlogik:</strong> ${proj.info}`;
+    $('priceTarget').textContent = currency(target);
+    $('priceRange').textContent = `Angebotsspanne: ${currency(low)} – ${currency(high)}`;
+    $('areaEquivalent').textContent = `${num(area)} m²`;
+    $('hoursTotal').textContent = `${num(totalHours, 1)} h`;
+    $('laborTotal').textContent = currency(labor);
+    $('materialTotal').textContent = currency(material);
+    $('consumableTotal').textContent = currency(consumables);
+    $('preWorkTotal').textContent = currency(preWorkCost);
+    $('specialMaterialTotal').textContent = currency(specialMaterialCost);
+    $('subtotalTotal').textContent = currency(subtotal);
+
+    $('formulaText').innerHTML = `
+      <strong>Rechenlogik</strong><br>
+      Stunden = Setup (${num(comp.setupHours,1)} h) + Objektbasis (${num(proj.objectBaseHours,1)} h) + Vorlagenaufbereitung (${num(refHours,1)} h) + Produktionszeit.<br>
+      Produktionszeit = Fläche × ${num(cfg.productionHoursPerM2,1)} h/m² × Komplexität (${num(comp.multiplier,2)}) × Detail (${num(detailFactor,2)}) × Präzision (${num(precisionFactor,2)}) × Farben (${num(colorsFactor,2)}) × Oberflächenfaktor (${num(proj.surfaceFactor,2)}).<br>
+      Zwischensumme = Arbeit + Material + Verbrauchsmaterial (${currency(v.consumableRate)}/h) + Vorarbeiten + Sondermaterial. Danach Puffer ${v.buffer}%.
+    `;
+
+    const compSetupHours = comp.setupHours;
+    const compSetupCost = compSetupHours * v.hourlyRate;
+    const referenceHours = refHours;
+    const referenceCost = referenceHours * v.hourlyRate;
+    const objectBaseHours = proj.objectBaseHours;
+    const objectBaseCost = objectBaseHours * v.hourlyRate;
+    const productionCost = productionHours * v.hourlyRate;
+
+    const payload = {
+      values: v,
+      area, totalHours, labor, material, consumables, preWorkCost, specialMaterialCost, subtotal, target, low, high,
+      projectNameResolved: proj.name,
+      compName: comp.name,
+      referenceLabel: $('referenceQuality').selectedOptions[0].text,
+      dimensions: v.projectType === 'flat' ? `${v.widthCm} × ${v.heightCm} cm` : null,
+      compSetupHours, compSetupCost,
+      referenceHours, referenceCost,
+      objectBaseHours, objectBaseCost,
+      productionHours, productionCost
+    };
+    const summary = buildSummary(payload);
+    $('summaryPreview').textContent = summary;
+    updatePrintQuote(payload);
+    window.__fgSummary = summary;
+  }
+
+  function resetForm() {
+    $('projectName').value = '';
+    $('customerName').value = '';
+    $('projectNote').value = '';
+    $('preset').value = '';
+    $('preWorkNeeded').value = 'no';
+    $('preWorkHours').value = 0;
+    $('specialMaterialName').value = '';
+    $('specialMaterialCost').value = 0;
+    Object.entries(cfg.defaults).forEach(([key, value]) => {
+      if ($(key)) $(key).value = value;
+    });
+    calculate();
+  }
+
+  function copySummary() {
+    navigator.clipboard.writeText(window.__fgSummary || '').then(() => {
+      const btn = $('copyBtn');
+      const old = btn.textContent;
+      btn.textContent = 'Kopiert';
+      setTimeout(() => btn.textContent = old, 1200);
+    }).catch(() => alert('Kopieren hat nicht funktioniert.'));
+  }
+
+  function exportPdf() {
+    const printTitle = `${$('projectName').value.trim() || $('customerName').value.trim() || 'FG-Designs-Kalkulation'} – FG Designs`;
+    const previousTitle = document.title;
+    document.title = printTitle;
+    setTimeout(() => { window.print(); }, 50);
+    setTimeout(() => { document.title = previousTitle; }, 1000);
+  }
+
+  function bindEvents() {
+    ids.forEach((id) => {
+      const node = $(id);
+      if (!node) return;
+      node.addEventListener('input', calculate);
+      node.addEventListener('change', calculate);
+    });
+
+    $('preset').addEventListener('change', (e) => applyPreset(e.target.value));
+    $('resetBtn').addEventListener('click', resetForm);
+    $('copyBtn').addEventListener('click', copySummary);
+    $('pdfBtn').addEventListener('click', exportPdf);
+  }
+
+  updateStaticConfigView();
+  populatePresets();
   bindEvents();
   resetForm();
-}
-
-init();
+})();
